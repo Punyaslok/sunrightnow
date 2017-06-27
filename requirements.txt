@@ -1,11 +1,14 @@
 gunicorn==19.6.0
 flask-bootstrap
+
+numpy
 astropy
-
-
-matplotlib
+scipy
 pandas
+matplotlib
+
 sqlalchemy
+scikit-image
 suds-jurko
 beautifulsoup4
 requests
