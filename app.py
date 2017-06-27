@@ -1,10 +1,8 @@
 import flask
 from flask import Flask, flash
 from flask_bootstrap import Bootstrap
-from wtforms import DateField
-from wtforms.fields.html5 import DateField
-from flask_wtf import Form
-from flask_wtf.csrf import CSRFProtect
+#from flask_wtf import Form
+#from flask_wtf.csrf import CSRFProtect
 import datetime
 
 import astropy.units as u
@@ -15,8 +13,8 @@ from astropy.units import imperial
 imperial.enable()
 
 app = flask.Flask(__name__)
-app.config['SECRET_KEY'] ='\xe7X\x8e\xc6L-\xf5\xf7\xdfY/P<\x8eM\x82\x8cc\x92\xfaJU\x12H'
-csrf = CSRFProtect(app)
+#app.config['SECRET_KEY'] ='\xe7X\x8e\xc6L-\xf5\xf7\xdfY/P<\x8eM\x82\x8cc\x92\xfaJU\x12H'
+#csrf = CSRFProtect(app)
 
 Bootstrap(app)
 
@@ -56,11 +54,11 @@ def magnetogram():
     _input_date = str(args.get('_input_date', DEFAULT_INPUT_DATE))
     print(_input_date)
 
-    #try:
-    _image_path = plot_magnetogram(_input_date)
-    #except:
-    #    print("Except Called")
-    #    _image_path = None
+    try:
+        _image_path = plot_magnetogram(_input_date)
+    except:
+        print("Except Called")
+        _image_path = None
 
     html = flask.render_template(
         'magnetogram.html',
