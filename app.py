@@ -54,11 +54,11 @@ def magnetogram():
     _input_date = str(args.get('_input_date', DEFAULT_INPUT_DATE))
     print(_input_date)
 
-    try:
-        _image_path = plot_magnetogram(_input_date)
-    except:
-        print("Except Called")
-        _image_path = None
+    #try:
+    _image_path = plot_magnetogram(_input_date)
+    #except:
+    #    print("Except Called")
+    #    _image_path = None
 
     html = flask.render_template(
         'magnetogram.html',
