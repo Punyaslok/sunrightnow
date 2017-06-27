@@ -56,7 +56,7 @@ def magnetogram():
 
     try:
         _image_path = plot_magnetogram(_input_date)
-    except as e:
+    except Exception as e:
         print("Except Called")
         print(e)
         _image_path = None
