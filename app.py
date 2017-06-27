@@ -85,6 +85,8 @@ def plot_magnetogram( input_date ):
 
     import datetime
 
+    import matplotlib as mpl
+    mpl.use('Agg')
     import matplotlib.pyplot as plt
     import numpy as np
     from astropy import units as u
@@ -95,6 +97,8 @@ def plot_magnetogram( input_date ):
     from sunpy.net import Fido, attrs as a
     import sunpy.map
     from sunpy.time import parse_time
+
+
 
     ##############################################################################
     # Let's select a date (yyyy-mm-dd) for which we will be downloading files.
