@@ -137,6 +137,7 @@ def plot_magnetogram( input_date ):
 
     srs_results = Fido.search(a.Time(start_time, end_time), a.Instrument('SOON'))
     srs_downloaded_files = Fido.fetch(srs_results)
+    print(srs_downloaded_files)
 
     ##############################################################################
     # We get one SRS file per day. So we pass the filename into the SRS reader. So
