@@ -58,6 +58,8 @@ def magnetogram():
         _image_path = plot_magnetogram(_input_date)
     except Exception as e:
         print("Except Called")
+        import traceback
+        traceback.print_exc()
         print(e)
         _image_path = None
 
