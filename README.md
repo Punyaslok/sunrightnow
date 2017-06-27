@@ -1,3 +1,3 @@
-# Unit Convertr
+# Sun, Right Now!
 
-A simple web app to convert between different unit systems
+A simple web app to visualize solar data using SunPy

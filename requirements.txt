@@ -1,3 +1,4 @@
 gunicorn==19.6.0
 flask-bootstrap
 astropy
+-e git://github.com/Punyaslok/sunpy.git@magnetogram_gallery_example#egg=SunPy
