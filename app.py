@@ -116,7 +116,11 @@ def plot_magnetogram( input_date ):
 
     ##############################################################################
     # Send the search query.
+    srs_results = Fido.search(a.Time(start_time, end_time), a.Instrument('SOON'))
+    srs_downloaded_files = Fido.fetch(srs_results)
+    print(srs_downloaded_files)
 
+    
     results = Fido.search(a.Time(start_time, end_time),
                                               a.Instrument('HMI') & a.vso.Physobs("LOS_magnetic_field"),
                                               a.vso.Sample(60* u.second))
@@ -130,14 +134,13 @@ def plot_magnetogram( input_date ):
     # We will plot only one file in this example.
 
     file_name = downloaded_files[0]
+    print(file_name)
 
     ##############################################################################
     # Now to download and read the SRS file.
     # Download the SRS file.
 
-    srs_results = Fido.search(a.Time(start_time, end_time), a.Instrument('SOON'))
-    srs_downloaded_files = Fido.fetch(srs_results)
-    print(srs_downloaded_files)
+    
 
     ##############################################################################
     # We get one SRS file per day. So we pass the filename into the SRS reader. So
