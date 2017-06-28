@@ -120,7 +120,7 @@ def plot_magnetogram( input_date ):
     srs_downloaded_files = Fido.fetch(srs_results)
     print(srs_downloaded_files)
 
-    
+
     results = Fido.search(a.Time(start_time, end_time),
                                               a.Instrument('HMI') & a.vso.Physobs("LOS_magnetic_field"),
                                               a.vso.Sample(60* u.second))
@@ -191,6 +191,8 @@ def plot_magnetogram( input_date ):
     smap.plot(vmin=-120, vmax=120)
     smap.draw_limb()
 
+    if not os.path.exists('static/images/magnetogram/'):
+    os.makedirs('static/images/magnetogram/')
     image_path = "static/images/magnetogram/"+str(start_time.strftime('%Y-%m-%d'))+"_magnetogram.svg"
     import os
     dir_path = os.path.dirname(os.path.realpath(__file__))
