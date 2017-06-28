@@ -192,7 +192,7 @@ def plot_magnetogram( input_date ):
     smap.draw_limb()
 
     if not os.path.exists('static/images/magnetogram/'):
-    os.makedirs('static/images/magnetogram/')
+        os.makedirs('static/images/magnetogram/')
     image_path = "static/images/magnetogram/"+str(start_time.strftime('%Y-%m-%d'))+"_magnetogram.svg"
     import os
     dir_path = os.path.dirname(os.path.realpath(__file__))
