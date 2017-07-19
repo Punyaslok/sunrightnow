@@ -1,58 +1,23 @@
+from commonfunctions import get_srs_info, fetch_client_file, get_time_range
+
 def plot_magnetogram( input_date ):
 
     if input_date is None:
         return None
 
-    import datetime
-
     import matplotlib as mpl
     mpl.use('Agg')
     import matplotlib.pyplot as plt
-    import numpy as np
-    from astropy import units as u
+
     from astropy.coordinates import SkyCoord
-
-    from sunpy.io.special import srs
     import sunpy.coordinates
-    from sunpy.net import Fido, attrs as a
     import sunpy.map
-    from sunpy.time import parse_time
 
-    day = parse_time(input_date)
+    start_time, end_time = get_time_range(input_date)
 
-    start_time = day + datetime.timedelta(minutes=1)
-    end_time = day + datetime.timedelta(minutes=2)
+    lats, lngs, numbers, srs_downloaded_files = get_srs_info(start_time, end_time)
 
-    srs_results = Fido.search(a.Time(start_time, end_time), a.Instrument('SOON'))
-    srs_downloaded_files = Fido.fetch(srs_results)
-    print(srs_downloaded_files)
-
-
-    results = Fido.search(a.Time(start_time, end_time),
-                                              a.Instrument('HMI') & a.vso.Physobs("LOS_magnetic_field"),
-                                              a.vso.Sample(60* u.second))
-
-    downloaded_files = Fido.fetch(results)
-
-    file_name = downloaded_files[0]
-    print(file_name)
-
-    srs_table = srs.read_srs(srs_downloaded_files[0])
-    print(srs_table)
-
-    if 'I' in srs_table['ID'] or 'IA' in srs_table['ID']:
-        srs_table = srs_table[np.logical_or(
-            srs_table['ID'] == 'I', srs_table['ID'] == 'IA')]
-    else:
-        print("Warning : No I or IA entries for this date.")
-        srs_table = None
-
-    if srs_table is not None:
-        lats = srs_table['Latitude']
-        lngs = srs_table['Longitude']
-        numbers = srs_table['Number']
-    else:
-        lats = lngs = numbers = None
+    file_name, downloaded_files = fetch_client_file(start_time, end_time, 'magnetogram')
 
     smap = sunpy.map.Map(file_name)
 
@@ -79,7 +44,7 @@ def plot_magnetogram( input_date ):
     plt.savefig(str(os.path.join(dir_path, image_path)), format='svg')
 
     from app import save_to_db
-    save_to_db(client='magnetogram', input_date=day, image_path=image_path)
+    save_to_db(client='magnetogram', input_date=start_time, image_path=image_path)
 
     # Job done, delete downloaded files
     for f in downloaded_files:
@@ -88,11 +53,14 @@ def plot_magnetogram( input_date ):
         os.remove(f)
 
     # Free memory
+    plt.clf()
+    plt.cla()
     plt.close('all')
 
     return image_path
 
 def plot_magnetogram_for_range(start_date, end_date):
+    
     import datetime
     start_date = datetime.datetime.strptime(start_date, '%Y-%m-%d')
     end_date = datetime.datetime.strptime(end_date, '%Y-%m-%d')
