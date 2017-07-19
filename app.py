@@ -16,7 +16,7 @@ imperial.enable()
 
 
 # Local imports
-from magnetogram import plot_magnetogram_for_range
+from magnetogram import plot_hmi_for_range
 
 app = flask.Flask(__name__)
 import os
@@ -27,17 +27,34 @@ db = SQLAlchemy(app)
 #app.config['SECRET_KEY'] ='\xe7X\x8e\xc6L-\xf5\xf7\xdfY/P<\x8eM\x82\x8cc\x92\xfaJU\x12H'
 #csrf = CSRFProtect(app)
 
-class Magnetogram(db.Model):
+class BaseClass(db.Model):
+    __tablename__ = 'baseclass'
     id = db.Column(db.Integer, primary_key=True)
-    plot_date = db.Column(db.DateTime, unique=True)
-    image_path = db.Column(db.String(120), unique=True)
+    plot_date = db.Column(db.DateTime)
+    image_path = db.Column(db.String(120))
 
     def __init__(self, plot_date, image_path):
         self.plot_date = plot_date
         self.image_path = image_path
 
     def __repr__(self):
-        return '<Magnetogram date = %r image_path = %r>' % (self.plot_date, self.image_path)
+        return '< date = %r image_path = %r >' % (self.plot_date, self.image_path)
+
+class Magnetogram(BaseClass):
+    __tablename__ = 'magnetogram'
+    id = db.Column(db.Integer, db.ForeignKey('baseclass.id'), primary_key=True)
+    client_name = 'magnetogram'
+    def __init__(self, plot_date, image_path):
+        BaseClass.__init__(self, plot_date, image_path)
+
+class Continuum(BaseClass):
+    __tablename__ = 'continuum'
+    id = db.Column(db.Integer, db.ForeignKey('baseclass.id'), primary_key=True)
+    client_name = 'continuum'
+    def __init__(self, plot_date, image_path):
+        BaseClass.__init__(self, plot_date, image_path)
+
+
 
 Bootstrap(app)
 
@@ -87,12 +104,35 @@ def magnetogram():
         _image_path = None
 
     html = flask.render_template(
-        'magnetogram.html',
+        'baseclass.html',
         _input_date=_input_date,
         _image_path=_image_path,
+        _client_name='magnetogram'
     )
     return html
 
+@app.route('/continuum', methods=['GET', 'POST'])
+def continuum():
+    args = flask.request.args
+    _input_date = str(args.get('_input_date', DEFAULT_INPUT_DATE))
+    print(_input_date)
+
+    try:
+        _image_path = search_in_db('continuum', _input_date)
+    except Exception as e:
+        print("Except Called")
+        import traceback
+        traceback.print_exc()
+        print(e)
+        _image_path = None
+
+    html = flask.render_template(
+        'baseclass.html',
+        _input_date=_input_date,
+        _image_path=_image_path,
+        _client_name='continuum',
+    )
+    return html
 
 def create_new_db():
     import os
@@ -108,6 +148,8 @@ def save_to_db(client=None, input_date=None, image_path=None):
 
     if 'magnetogram' in client:
         db.session.add(Magnetogram(input_date, image_path))
+    elif 'continuum' in client:
+        db.session.add(Continuum(input_date, image_path))
 
     db.session.commit()
     return
@@ -121,19 +163,23 @@ def search_in_db(client=None, input_date=None):
 
     input_date = datetime.datetime.strptime(input_date, '%Y-%m-%d')
     print('searching for ' + str(input_date))
+    entry = None
     if 'magnetogram' in client:
         entry = Magnetogram.query.filter_by(plot_date=input_date).first()
-        print(entry)
-        if entry is None:
-            print("Image not found")
-            return None
-        else:
-            return entry.image_path
+    elif 'continuum' in client:
+        entry = Continuum.query.filter_by(plot_date=input_date).first()
+    print(entry)
+    if entry is None:
+        print("Image not found")
+        return None
+    else:
+        return entry.image_path
 
 def populate_db():
-    start_date = '2017-03-05'
+    start_date = '2017-03-03'
     end_date = '2017-03-05'
-    plot_magnetogram_for_range(start_date, end_date)
+    plot_hmi_for_range(start_date, end_date, 'magnetogram')
+    plot_hmi_for_range(start_date, end_date, 'continuum')
     return
 
 create_new_db()
