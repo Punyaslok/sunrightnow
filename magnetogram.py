@@ -76,6 +76,28 @@ def plot_magnetogram( input_date ):
     image_path = "static/images/magnetogram/"+str(start_time.strftime('%Y-%m-%d'))+"_magnetogram.svg"
 
     dir_path = os.path.dirname(os.path.realpath(__file__))
-    plt.savefig(str(os.path.join(dir_path, image_path)))
+    plt.savefig(str(os.path.join(dir_path, image_path)), format='svg')
+
+    from app import save_to_db
+    save_to_db(client='magnetogram', input_date=day, image_path=image_path)
+
+    # Job done, delete downloaded files
+    for f in downloaded_files:
+        os.remove(f)
+    for f in srs_downloaded_files:
+        os.remove(f)
+
     return image_path
 
+def plot_magnetogram_for_range(start_date, end_date):
+    import datetime
+    start_date = datetime.datetime.strptime(start_date, '%Y-%m-%d')
+    end_date = datetime.datetime.strptime(end_date, '%Y-%m-%d')
+    delta = datetime.timedelta(days=1)
+
+    d = start_date
+    while d <= end_date:
+        plot_magnetogram(str(d))
+        d += delta
+
+    return
