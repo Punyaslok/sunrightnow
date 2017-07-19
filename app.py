@@ -16,12 +16,13 @@ imperial.enable()
 
 
 # Local imports
-from magnetogram import plot_magnetogram
+from magnetogram import plot_magnetogram_for_range
 
 app = flask.Flask(__name__)
 import os
 basedir = os.path.abspath(os.path.dirname(__file__))
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, 'app.db')
+database_name = 'app.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, database_name)
 db = SQLAlchemy(app)
 #app.config['SECRET_KEY'] ='\xe7X\x8e\xc6L-\xf5\xf7\xdfY/P<\x8eM\x82\x8cc\x92\xfaJU\x12H'
 #csrf = CSRFProtect(app)
@@ -92,13 +93,18 @@ def magnetogram():
     )
     return html
 
-if __name__ == '__main__':
-    print(__doc__)
-    app.run(debug=True)
+
+def create_new_db():
+    import os
+    if os.path.exists(database_name):
+        os.remove(database_name)
+    db.create_all()
+    return
+
 
 def save_to_db(client=None, input_date=None, image_path=None):
     if client is None or input_date is None or image_path is None:
-        raise ValueError('No argument can be None')
+        raise ValueError('No argument cannot be None')
 
     if 'magnetogram' in client:
         db.session.add(Magnetogram(input_date, image_path))
@@ -109,14 +115,13 @@ def save_to_db(client=None, input_date=None, image_path=None):
 
 def search_in_db(client=None, input_date=None):
     if client is None:
-        raise ValueError('client argument can be None')
+        raise ValueError('client argument cannot be None')
     if input_date is None:
-        raise ValueError('date argument can be None')
+        raise ValueError('date argument cannot be None')
 
     input_date = datetime.datetime.strptime(input_date, '%Y-%m-%d')
     print('searching for ' + str(input_date))
     if 'magnetogram' in client:
-        #entry = Magnetogram.query.filter_by(check_same_day(Magnetogram.plot_date, input_date) is True).first()
         entry = Magnetogram.query.filter_by(plot_date=input_date).first()
         print(entry)
         if entry is None:
@@ -124,3 +129,16 @@ def search_in_db(client=None, input_date=None):
             return None
         else:
             return entry.image_path
+
+def populate_db():
+    start_date = '2017-03-03'
+    end_date = '2017-03-05'
+    plot_magnetogram_for_range(start_date, end_date)
+    return
+
+create_new_db()
+populate_db()
+
+if __name__ == '__main__':
+    print(__doc__)
+    app.run(debug=True)
