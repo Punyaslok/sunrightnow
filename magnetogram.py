@@ -87,6 +87,11 @@ def plot_magnetogram( input_date ):
     for f in srs_downloaded_files:
         os.remove(f)
 
+    # Free memory
+    #fig.clf()
+    plt.close()
+    #gc.collect()
+
     return image_path
 
 def plot_magnetogram_for_range(start_date, end_date):
