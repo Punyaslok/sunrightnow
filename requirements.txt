@@ -1,5 +1,6 @@
 gunicorn==19.6.0
 flask-bootstrap
+flask_sqlalchemy
 
 numpy
 astropy
