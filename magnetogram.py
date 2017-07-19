@@ -89,7 +89,7 @@ def plot_magnetogram( input_date ):
 
     # Free memory
     #fig.clf()
-    plt.close()
+    plt.close('all')
     #gc.collect()
 
     return image_path

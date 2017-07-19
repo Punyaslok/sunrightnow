@@ -131,7 +131,7 @@ def search_in_db(client=None, input_date=None):
             return entry.image_path
 
 def populate_db():
-    start_date = '2017-03-03'
+    start_date = '2017-03-05'
     end_date = '2017-03-05'
     plot_magnetogram_for_range(start_date, end_date)
     return
