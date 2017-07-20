@@ -12,11 +12,12 @@ def plot_hmi( input_date, client_name ):
 
     srs_downloaded_files = get_srs_files(start_time, end_time)
 
-    print(lats, lngs, numbers)
 
     file_name, downloaded_files = fetch_client_file(start_time, end_time, client_name)
 
     lats, lngs, numbers = get_srs_info(srs_downloaded_files)
+    print(lats, lngs, numbers)
+
 
 
     image_path = plot_and_save(start_time, file_name, lats, lngs, numbers, client_name)
