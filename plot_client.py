@@ -1,4 +1,5 @@
 import os
+from sunpy.util.config import get_and_create_download_dir
 
 from commonfunctions import get_srs_info, get_srs_files, fetch_client_file, get_time_range, plot_and_save
 
@@ -30,8 +31,15 @@ def plot_client( input_date, client_name ):
 
     # Job done, delete downloaded files
     for f in downloaded_files:
-        os.remove(f)
+        if os.path.exists(f):
+            os.remove(f)
     for f in srs_downloaded_files:
+        if os.path.exists(f):
+            os.remove(f)
+
+    # Delete all SRS tar files
+    filelist = [ f for f in os.listdir(get_and_create_download_dir()) if f.endswith(".gz") ]
+    for f in filelist:
         os.remove(f)
 
     return image_path
@@ -43,8 +51,12 @@ def plot_client_for_range(start_date, end_date, client_name):
     end_date = datetime.datetime.strptime(end_date, '%Y-%m-%d')
     delta = datetime.timedelta(days=1)
 
+    stereob_end_date = datetime.datetime.strptime('2014-09-27', '%Y-%m-%d') # No stereo B entries after this date
+
     d = start_date
     while d <= end_date:
+        if client_name == 'stereob' and d > stereob_end_date:
+            break
         plot_client(str(d), client_name)
         d += delta
 

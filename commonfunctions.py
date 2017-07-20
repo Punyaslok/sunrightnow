@@ -68,6 +68,17 @@ def fetch_client_file(start_time, end_time, client_name):
                               a.vso.Sample(61 * u.second),
                               a.vso.Wavelength(171*u.AA)
                               )
+    elif 'stereo' in client_name:
+        end_time += datetime.timedelta(minutes=10)
+        source_name = 'STEREO_'
+        if client_name == 'stereoa':
+            source_name += 'A'
+        elif client_name == 'stereob':
+            source_name += 'B'
+        results = Fido.search(a.Time(start_time, end_time),
+                              a.Instrument('euvi') & a.vso.Source(source_name)
+                             )
+
 
     downloaded_files = Fido.fetch(results)
 
@@ -97,6 +108,8 @@ def plot_and_save(start_time, file_name, lats, lngs, numbers, client_name):
         smap.plot(vmin=-120, vmax=120)
     elif 'aia' in client_name:
         #smap.plot(vmin=0, vmax=50)
+        smap.plot()
+    elif 'stereo' in client_name:
         smap.plot()
     else:
         smap.plot()

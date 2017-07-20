@@ -61,6 +61,20 @@ class Aia(BaseClass):
     def __init__(self, plot_date, image_path):
         BaseClass.__init__(self, plot_date, image_path)
 
+class StereoA(BaseClass):
+    __tablename__ = 'stereoa'
+    id = db.Column(db.Integer, db.ForeignKey('baseclass.id'), primary_key=True)
+    client_name = 'stereoa'
+    def __init__(self, plot_date, image_path):
+        BaseClass.__init__(self, plot_date, image_path)
+
+class StereoB(BaseClass):
+    __tablename__ = 'stereob'
+    id = db.Column(db.Integer, db.ForeignKey('baseclass.id'), primary_key=True)
+    client_name = 'stereob'
+    def __init__(self, plot_date, image_path):
+        BaseClass.__init__(self, plot_date, image_path)
+
 
 
 Bootstrap(app)
@@ -164,6 +178,52 @@ def aia():
     )
     return html
 
+@app.route('/stereoa', methods=['GET', 'POST'])
+def stereoa():
+    args = flask.request.args
+    _input_date = str(args.get('_input_date', DEFAULT_INPUT_DATE))
+    print(_input_date)
+
+    try:
+        _image_path = search_in_db('stereoa', _input_date)
+    except Exception as e:
+        print("Except Called")
+        import traceback
+        traceback.print_exc()
+        print(e)
+        _image_path = None
+
+    html = flask.render_template(
+        'baseclass.html',
+        _input_date=_input_date,
+        _image_path=_image_path,
+        _client_name='stereoa',
+    )
+    return html
+
+@app.route('/stereob', methods=['GET', 'POST'])
+def stereob():
+    args = flask.request.args
+    _input_date = str(args.get('_input_date', DEFAULT_INPUT_DATE))
+    print(_input_date)
+
+    try:
+        _image_path = search_in_db('stereob', _input_date)
+    except Exception as e:
+        print("Except Called")
+        import traceback
+        traceback.print_exc()
+        print(e)
+        _image_path = None
+
+    html = flask.render_template(
+        'baseclass.html',
+        _input_date=_input_date,
+        _image_path=_image_path,
+        _client_name='stereob',
+    )
+    return html
+
 def create_new_db():
     import os
     if os.path.exists(database_name):
@@ -182,6 +242,10 @@ def save_to_db(client=None, input_date=None, image_path=None):
         db.session.add(Continuum(input_date, image_path))
     elif 'aia' in client:
         db.session.add(Aia(input_date, image_path))
+    elif 'stereoa' in client:
+        db.session.add(StereoA(input_date, image_path))
+    elif 'stereob' in client:
+        db.session.add(StereoB(input_date, image_path))
 
     db.session.commit()
     return
@@ -202,6 +266,10 @@ def search_in_db(client=None, input_date=None):
         entry = Continuum.query.filter_by(plot_date=input_date).first()
     elif 'aia' in client:
         entry = Aia.query.filter_by(plot_date=input_date).first()
+    elif 'stereoa' in client:
+        entry = StereoA.query.filter_by(plot_date=input_date).first()
+    elif 'stereob' in client:
+        entry = StereoB.query.filter_by(plot_date=input_date).first()
     print(entry)
     if entry is None:
         print("Image not found")
@@ -215,7 +283,9 @@ def populate_db():
     clients = [
             'magnetogram',
             'continuum',
-            'aia'
+            'aia',
+            'stereoa',
+            #'stereob',
     ]
     for client in clients:
         plot_client_for_range(start_date, end_date, client)
