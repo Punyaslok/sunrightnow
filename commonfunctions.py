@@ -62,6 +62,12 @@ def fetch_client_file(start_time, end_time, client_name):
     	results = Fido.search(a.Time(start_time, end_time),
                               a.Instrument('HMI') & a.vso.Physobs("intensity"),
                               a.vso.Sample(60 * u.second))
+    elif client_name == 'aia':
+        results = Fido.search(a.Time(start_time, end_time),
+                              a.Instrument('AIA'),
+                              a.vso.Sample(61 * u.second),
+                              a.vso.Wavelength(171*u.AA)
+                              )
 
     downloaded_files = Fido.fetch(results)
 
@@ -84,8 +90,19 @@ def plot_and_save(start_time, file_name, lats, lngs, numbers, client_name):
 
     smap = sunpy.map.Map(file_name)
 
-    im = smap.plot()
-    ax = plt.gca()
+    #im = smap.plot()
+    ax = plt.subplot(projection=smap)
+    
+    if 'magnetogram' in client_name:
+        smap.plot(vmin=-120, vmax=120)
+    elif 'aia' in client_name:
+        #smap.plot(vmin=0, vmax=50)
+        smap.plot()
+    else:
+        smap.plot()
+    
+    smap.draw_limb()
+
     ax.set_autoscale_on(False)
 
     c = SkyCoord(lngs, lats, frame="heliographic_stonyhurst")
@@ -95,10 +112,7 @@ def plot_and_save(start_time, file_name, lats, lngs, numbers, client_name):
             ax.annotate(num, (lngs[i].value, lats[i].value),
                                     xycoords=ax.get_transform('heliographic_stonyhurst'))
 
-    if 'magnetogram' in client_name:
-    	smap.plot(vmin=-120, vmax=120)
-
-    smap.draw_limb()
+    
 
     if not os.path.exists('static/images/' + client_name + '/'):
         os.makedirs('static/images/' + client_name + '/')

@@ -16,7 +16,7 @@ imperial.enable()
 
 
 # Local imports
-from hmi import plot_hmi_for_range
+from plot_client import plot_client_for_range
 
 app = flask.Flask(__name__)
 import os
@@ -51,6 +51,13 @@ class Continuum(BaseClass):
     __tablename__ = 'continuum'
     id = db.Column(db.Integer, db.ForeignKey('baseclass.id'), primary_key=True)
     client_name = 'continuum'
+    def __init__(self, plot_date, image_path):
+        BaseClass.__init__(self, plot_date, image_path)
+
+class Aia(BaseClass):
+    __tablename__ = 'aia'
+    id = db.Column(db.Integer, db.ForeignKey('baseclass.id'), primary_key=True)
+    client_name = 'aia'
     def __init__(self, plot_date, image_path):
         BaseClass.__init__(self, plot_date, image_path)
 
@@ -134,6 +141,29 @@ def continuum():
     )
     return html
 
+@app.route('/aia', methods=['GET', 'POST'])
+def aia():
+    args = flask.request.args
+    _input_date = str(args.get('_input_date', DEFAULT_INPUT_DATE))
+    print(_input_date)
+
+    try:
+        _image_path = search_in_db('aia', _input_date)
+    except Exception as e:
+        print("Except Called")
+        import traceback
+        traceback.print_exc()
+        print(e)
+        _image_path = None
+
+    html = flask.render_template(
+        'baseclass.html',
+        _input_date=_input_date,
+        _image_path=_image_path,
+        _client_name='aia',
+    )
+    return html
+
 def create_new_db():
     import os
     if os.path.exists(database_name):
@@ -150,6 +180,8 @@ def save_to_db(client=None, input_date=None, image_path=None):
         db.session.add(Magnetogram(input_date, image_path))
     elif 'continuum' in client:
         db.session.add(Continuum(input_date, image_path))
+    elif 'aia' in client:
+        db.session.add(Aia(input_date, image_path))
 
     db.session.commit()
     return
@@ -168,6 +200,8 @@ def search_in_db(client=None, input_date=None):
         entry = Magnetogram.query.filter_by(plot_date=input_date).first()
     elif 'continuum' in client:
         entry = Continuum.query.filter_by(plot_date=input_date).first()
+    elif 'aia' in client:
+        entry = Aia.query.filter_by(plot_date=input_date).first()
     print(entry)
     if entry is None:
         print("Image not found")
@@ -178,8 +212,13 @@ def search_in_db(client=None, input_date=None):
 def populate_db():
     start_date = '2017-03-05'
     end_date = '2017-03-05'
-    plot_hmi_for_range(start_date, end_date, 'magnetogram')
-    plot_hmi_for_range(start_date, end_date, 'continuum')
+    clients = [
+            'magnetogram',
+            'continuum',
+            'aia'
+    ]
+    for client in clients:
+        plot_client_for_range(start_date, end_date, client)
     return
 
 create_new_db()

@@ -2,7 +2,7 @@ import os
 
 from commonfunctions import get_srs_info, get_srs_files, fetch_client_file, get_time_range, plot_and_save
 
-def plot_hmi( input_date, client_name ):
+def plot_client( input_date, client_name ):
     # client_name can be either 'magnetogram' or 'continuum'
 
     if input_date is None:
@@ -36,7 +36,7 @@ def plot_hmi( input_date, client_name ):
 
     return image_path
 
-def plot_hmi_for_range(start_date, end_date, client_name):
+def plot_client_for_range(start_date, end_date, client_name):
     
     import datetime
     start_date = datetime.datetime.strptime(start_date, '%Y-%m-%d')
@@ -45,7 +45,7 @@ def plot_hmi_for_range(start_date, end_date, client_name):
 
     d = start_date
     while d <= end_date:
-        plot_hmi(str(d), client_name)
+        plot_client(str(d), client_name)
         d += delta
 
     return
