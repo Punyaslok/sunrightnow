@@ -15,6 +15,8 @@ def plot_hmi( input_date, client_name ):
     srs_downloaded_files = Fido.fetch(srs_results)
     print(srs_downloaded_files)
 
+    with open(srs_downloaded_files[0], 'r') as fin:
+        print fin.read()
     srs_table = srs.read_srs(srs_downloaded_files[0])
     print(srs_table)
 
