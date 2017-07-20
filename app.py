@@ -178,7 +178,7 @@ def search_in_db(client=None, input_date=None):
 def populate_db():
     start_date = '2017-03-05'
     end_date = '2017-03-05'
-    #plot_hmi_for_range(start_date, end_date, 'magnetogram')
+    plot_hmi_for_range(start_date, end_date, 'magnetogram')
     #plot_hmi_for_range(start_date, end_date, 'continuum')
     return
 

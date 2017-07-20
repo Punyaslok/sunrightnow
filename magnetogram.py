@@ -10,7 +10,29 @@ def plot_hmi( input_date, client_name ):
 
     start_time, end_time = get_time_range(input_date)
 
-    lats, lngs, numbers, srs_downloaded_files = get_srs_info(start_time, end_time)
+    #lats, lngs, numbers, srs_downloaded_files = get_srs_info(start_time, end_time)
+    srs_results = Fido.search(a.Time(start_time, end_time), a.Instrument('SOON'))
+    srs_downloaded_files = Fido.fetch(srs_results)
+    print(srs_downloaded_files)
+
+    srs_table = srs.read_srs(srs_downloaded_files[0])
+    print(srs_table)
+
+    if 'I' in srs_table['ID'] or 'IA' in srs_table['ID']:
+        srs_table = srs_table[np.logical_or(srs_table['ID'] == 'I',
+                                            srs_table['ID'] == 'IA')]
+    else:
+        print("Warning : No I or IA entries for this date.")
+        srs_table = None
+
+    if srs_table is not None:
+        lats = srs_table['Latitude']
+        lngs = srs_table['Longitude']
+        numbers = srs_table['Number']
+    else:
+        lats = lngs = numbers = None
+
+    print(lats, lngs, numbers)
 
     file_name, downloaded_files = fetch_client_file(start_time, end_time, client_name)
 
