@@ -1,6 +1,6 @@
 import os
 
-from commonfunctions import get_srs_info, fetch_client_file, get_time_range, plot_and_save
+from commonfunctions import *
 
 def plot_hmi( input_date, client_name ):
     # client_name can be either 'magnetogram' or 'continuum'
@@ -10,7 +10,10 @@ def plot_hmi( input_date, client_name ):
 
     start_time, end_time = get_time_range(input_date)
 
-    lats, lngs, numbers, srs_downloaded_files = get_srs_info(start_time, end_time)
+    srs_downloaded_files = get_srs_files(start_time, end_time)
+    lats, lngs, numbers = get_srs_info(srs_downloaded_files)
+
+    print(lats, lngs, numbers)
 
     file_name, downloaded_files = fetch_client_file(start_time, end_time, client_name)
 

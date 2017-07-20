@@ -15,7 +15,7 @@ import sunpy.coordinates
 import sunpy.map
 
 
-def get_srs_info(start_time, end_time):
+def get_srs_files(start_time, end_time):
     """
     Get latitude, longitude and number info for ARs
     """
@@ -25,6 +25,9 @@ def get_srs_info(start_time, end_time):
     srs_downloaded_files = Fido.fetch(srs_results)
     print(srs_downloaded_files)
 
+    return srs_downloaded_files
+
+def get_srs_info(srs_downloaded_files):
     srs_table = srs.read_srs(srs_downloaded_files[0])
     print(srs_table)
 
@@ -44,7 +47,7 @@ def get_srs_info(start_time, end_time):
 
     print(lats, lngs, numbers)
 
-    return lats, lngs, numbers, srs_downloaded_files
+    return lats, lngs, numbers
 
 
 def fetch_client_file(start_time, end_time, client_name):
