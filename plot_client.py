@@ -29,18 +29,7 @@ def plot_client( input_date, client_name ):
     from app import save_to_db
     save_to_db(client=client_name, input_date=start_time, image_path=image_path)
 
-    # Job done, delete downloaded files
-    for f in downloaded_files:
-        if os.path.exists(f):
-            os.remove(f)
-    for f in srs_downloaded_files:
-        if os.path.exists(f):
-            os.remove(f)
-
-    # Delete all SRS tar files
-    filelist = [ f for f in os.listdir(get_and_create_download_dir()) if f.endswith(".gz") ]
-    for f in filelist:
-        os.remove(f)
+    clear_download_directory()
 
     return image_path
 
@@ -60,4 +49,14 @@ def plot_client_for_range(start_date, end_date, client_name):
         plot_client(str(d), client_name)
         d += delta
 
+    return
+
+def clear_download_directory():
+    # delete all downloaded files
+    download_dir = get_and_create_download_dir()
+    filelist = os.listdir(download_dir)
+    for f in filelist:
+        filepath = os.path.join(download_dir, f)
+        if os.path.isfile(filepath):
+            os.remove(filepath)
     return

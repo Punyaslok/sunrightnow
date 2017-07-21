@@ -16,7 +16,7 @@ imperial.enable()
 
 
 # Local imports
-from plot_client import plot_client_for_range
+from plot_client import plot_client_for_range, clear_download_directory
 
 app = flask.Flask(__name__)
 import os
@@ -75,7 +75,77 @@ class StereoB(BaseClass):
     def __init__(self, plot_date, image_path):
         BaseClass.__init__(self, plot_date, image_path)
 
+class Goes(db.Model):
+    __tablename__ = 'goes'
 
+    id = db.Column(db.Integer, primary_key=True)
+
+    index = db.Column(db.DateTime)
+    xrsa = db.Column(db.Float)
+    xrsb = db.Column(db.Float)
+    time_str = db.Column(db.String(20))
+
+    def __init__(self, index, xrsa, xrsb, time_str):
+        self.index = index
+        self.xrsa = xrsa
+        self.xrsb = xrsb
+        self.time_str = time_str
+
+    def __repr__(self):
+        return '< index = %r xrsa = %r xrsb = %r time_str = %r>' % (self.index, self.xrsa, self.xrsb, self.time_str)
+
+class Eve(db.Model):
+    __tablename__ = 'eve'
+
+    id = db.Column(db.Integer, primary_key=True)
+
+    index = db.Column(db.DateTime)
+    xrsa_proxy = db.Column(db.Float)
+    xrsb_proxy = db.Column(db.Float)
+    sem_proxy = db.Column(db.Float)
+    ESPquad017 = db.Column(db.Float)    # 0.1-7ESPquad
+    ESP171 = db.Column(db.Float)        # 17.1ESP
+    ESP257 = db.Column(db.Float)        # 25.7ESP
+    ESP304 = db.Column(db.Float)        # 30.4ESP
+    ESP366 = db.Column(db.Float)        # 36.6ESP
+    darkESP = db.Column(db.Float)       # darkESP
+    MEGS_P1216 = db.Column(db.Float)    # 121.6MEGS-P
+    darkMEGS_P = db.Column(db.Float)    # darkMEGS-P
+    q0ESP = db.Column(db.Float)
+    q1ESP = db.Column(db.Float)
+    q2ESP = db.Column(db.Float)
+    q3ESP = db.Column(db.Float)
+    CMLat = db.Column(db.Float)
+    CMLon = db.Column(db.Float)
+    x_cool_proxy= db.Column(db.Float)
+    oldXRSB_proxy = db.Column(db.Float)
+    time_str = db.Column(db.String(20))
+
+    def __init__(self,**kwargs):
+        self.index = kwargs.pop('index')
+        self.xrsa_proxy = kwargs.pop('xrsa_proxy')
+        self.xrsb_proxy = kwargs.pop('xrsb_proxy')
+        self.sem_proxy = kwargs.pop('sem_proxy')
+        self.ESPquad017 = kwargs.pop('ESPquad017')    # 0.1-7ESPquad
+        self.ESP171 = kwargs.pop('ESP171')        # 17.1ESP
+        self.ESP257 = kwargs.pop('ESP257')        # 25.7ESP
+        self.ESP304 = kwargs.pop('ESP304')        # 30.4ESP
+        self.ESP366 = kwargs.pop('ESP366')        # 36.6ESP
+        self.darkESP = kwargs.pop('darkESP')       # darkESP
+        self.MEGS_P1216 = kwargs.pop('MEGS_P1216')    # 121.6MEGS-P
+        self.darkMEGS_P = kwargs.pop('darkMEGS_P')    # darkMEGS-P
+        self.q0ESP = kwargs.pop('q0ESP')
+        self.q1ESP = kwargs.pop('q1ESP')
+        self.q2ESP = kwargs.pop('q2ESP')
+        self.q3ESP = kwargs.pop('q3ESP')
+        self.CMLat = kwargs.pop('CMLat')
+        self.CMLon = kwargs.pop('CMLon')
+        self.x_cool_proxy= kwargs.pop('x_cool_proxy')
+        self.oldXRSB_proxy = kwargs.pop('oldXRSB_proxy')
+        self.time_str = kwargs.pop('time_str')
+
+    def __repr__(self):
+        return '< index = %r xrsa_proxy = %r xrsb_proxy = %r time_str = %r>' % (self.index, self.xrsa_proxy, self.xrsb_proxy, self.time_str)
 
 Bootstrap(app)
 
@@ -224,6 +294,295 @@ def stereob():
     )
     return html
 
+@app.route('/goes', methods=['GET', 'POST'])
+def goes():
+    """
+    Very simple embedding of a lightcurve chart
+    """
+    # FLASK
+    # Grab the inputs arguments from the URL
+    # This is automated by the button
+
+    import pandas
+
+    from bokeh.embed import components
+    from bokeh.plotting import figure
+    from bokeh.resources import INLINE
+    from bokeh.util.string import encode_utf8
+    from bokeh.layouts import Column
+    from bokeh.models.formatters import DatetimeTickFormatter
+    from bokeh.models import ColumnDataSource, CustomJS, HoverTool
+
+    from sunpy.time import TimeRange, parse_time
+
+    # set some defaults
+    #DEFAULT_TR = TimeRange(['2011-06-07 00:00', '2011-06-07 12:00'])
+    DEFAULT_TR = TimeRange(['2016-06-07 00:00', '2016-06-07 12:00'])
+    PLOT_HEIGHT = 300
+    PLOT_WIDTH = 900
+    TOOLS = 'pan,box_zoom,wheel_zoom,box_select,crosshair,undo,redo,save,reset'
+    ONE_HOUR = datetime.timedelta(seconds=60*60)
+    ONE_DAY = datetime.timedelta(days=1)
+
+    formatter = DatetimeTickFormatter(hours="%F %H:%M")
+
+    data = search_in_timeseries_db(DEFAULT_TR.start, DEFAULT_TR.end, client='goes')
+    
+    source = ColumnDataSource(data=data)
+    source_static = ColumnDataSource(data=data)
+
+
+    args = flask.request.args
+
+    _from = str(args.get('_from', str(DEFAULT_TR.start)))
+    _to = str(args.get('_to', str(DEFAULT_TR.end)))
+
+    tr = TimeRange(parse_time(_from), parse_time(_to))
+
+    if 'next' in args:
+        tr = tr.next()
+
+    if 'prev' in args:
+        tr = tr.previous()
+
+    if 'next_hour' in args:
+        tr = TimeRange(tr.start + ONE_HOUR, tr.end + ONE_HOUR)
+
+    if 'next_day' in args:
+        tr = TimeRange(tr.start + ONE_DAY, tr.end + ONE_DAY)
+
+    if 'prev_hour' in args:
+        tr = TimeRange(tr.start - ONE_HOUR, tr.end - ONE_HOUR)
+
+    if 'prev_day' in args:
+        tr = TimeRange(tr.start - ONE_DAY, tr.end - ONE_DAY)
+
+    _from = str(tr.start)
+    _to = str(tr.end)
+
+    data = search_in_timeseries_db(tr.start, tr.end, client='goes')
+
+    source = ColumnDataSource(data=data)
+    source_static = ColumnDataSource(data=data)
+
+    fig1 = figure(title="GOES", tools=TOOLS,
+                  plot_height=PLOT_HEIGHT, width=PLOT_WIDTH,
+                  x_axis_type='datetime', y_axis_type="log",
+                  y_range=(10**-9, 10**-2), toolbar_location="right")
+
+    fig1.xaxis.formatter = formatter
+
+    names_and_legends = {
+                            'xrsa' : ["blue", "xrsa 0.5-4.0 Angstrom"],
+                            'xrsb' : ["red", "xrsa 1-8 Angstrom"]
+                        }
+    for key in names_and_legends:
+        fig1.line('index', key, source=source_static, color=names_and_legends[key][0],line_width=2, legend=names_and_legends[key][1])
+
+    fig = Column(fig1)
+
+    source_static.callback = CustomJS(code="""
+        var inds = cb_obj.selected['1d'].indices;
+        var d1 = cb_obj.data;
+        var m = 0;
+        if (inds.length == 0) { return; }
+        for (i = 0; i < inds.length; i++) {
+            d1['color'][inds[i]] = "red"
+            if (d1['y'][inds[i]] > m) { m = d1['y'][inds[i]] }
+        }
+        console.log(m);
+        cb_obj.trigger('change');
+    """)
+
+    hover = HoverTool()
+    hover.tooltips  = [
+        ("time", "@time_str"),
+        ("xrsb", "@xrsb"),
+        ("xrsa", "@xrsa")
+    ]
+
+    fig1.add_tools(hover)
+
+    # Configure resources to include BokehJS inline in the document.
+    # For more details see:
+    #   http://bokeh.pydata.org/en/latest/docs/reference/resources_embedding.html#bokeh-embed
+    js_resources = INLINE.render_js()
+    css_resources = INLINE.render_css()
+
+    # For more details see:
+    #   http://bokeh.pydata.org/en/latest/docs/user_guide/embedding.html#components
+    script, div = components(fig, INLINE)
+    html = flask.render_template(
+        'timeseries.html',
+        plot_script=script,
+        plot_div=div,
+        js_resources=js_resources,
+        css_resources=css_resources,
+        _from=_from,
+        _to=_to,
+        client_name='GOES'
+    )
+    return encode_utf8(html)
+
+
+@app.route('/eve', methods=['GET', 'POST'])
+def eve():
+    """
+    Very simple embedding of a lightcurve chart
+    """
+    # FLASK
+    # Grab the inputs arguments from the URL
+    # This is automated by the button
+
+    import pandas
+
+    from bokeh.embed import components
+    from bokeh.plotting import figure
+    from bokeh.resources import INLINE
+    from bokeh.util.string import encode_utf8
+    from bokeh.layouts import Column
+    from bokeh.models.formatters import DatetimeTickFormatter
+    from bokeh.models import ColumnDataSource, CustomJS, HoverTool
+
+    from sunpy.time import TimeRange, parse_time
+
+    # set some defaults
+    DEFAULT_TR = TimeRange(['2016-06-07 00:00', '2016-06-07 12:00'])
+    PLOT_HEIGHT = 600
+    PLOT_WIDTH = 1000
+    TOOLS = 'pan,box_zoom,wheel_zoom,box_select,crosshair,undo,redo,save,reset'
+    ONE_HOUR = datetime.timedelta(seconds=60*60)
+    ONE_DAY = datetime.timedelta(days=1)
+
+    formatter = DatetimeTickFormatter(hours="%F %H:%M")
+
+    data = search_in_timeseries_db(DEFAULT_TR.start, DEFAULT_TR.end, client='eve')
+    
+    source = ColumnDataSource(data=data)
+    source_static = ColumnDataSource(data=data)
+
+
+    args = flask.request.args
+
+    _from = str(args.get('_from', str(DEFAULT_TR.start)))
+    _to = str(args.get('_to', str(DEFAULT_TR.end)))
+
+    tr = TimeRange(parse_time(_from), parse_time(_to))
+
+    if 'next' in args:
+        tr = tr.next()
+
+    if 'prev' in args:
+        tr = tr.previous()
+
+    if 'next_hour' in args:
+        tr = TimeRange(tr.start + ONE_HOUR, tr.end + ONE_HOUR)
+
+    if 'next_day' in args:
+        tr = TimeRange(tr.start + ONE_DAY, tr.end + ONE_DAY)
+
+    if 'prev_hour' in args:
+        tr = TimeRange(tr.start - ONE_HOUR, tr.end - ONE_HOUR)
+
+    if 'prev_day' in args:
+        tr = TimeRange(tr.start - ONE_DAY, tr.end - ONE_DAY)
+
+    _from = str(tr.start)
+    _to = str(tr.end)
+
+    data = search_in_timeseries_db(tr.start, tr.end, client='eve')
+
+    source = ColumnDataSource(data=data)
+    source_static = ColumnDataSource(data=data)
+
+    fig1 = figure(title="EVE", tools=TOOLS,
+                  plot_height=PLOT_HEIGHT, width=PLOT_WIDTH,
+                  x_axis_type='datetime', #y_axis_type="log",
+                  y_range=(-60, 100), toolbar_location="right")
+
+    fig1.xaxis.formatter = formatter
+
+    names_and_legends = {   #colname : [color, legend_name]
+                            'xrsa_proxy' : [],
+                            'xrsb_proxy' : [],
+                            'sem_proxy' : [],
+                            'ESPquad017' : [],    # 0.1-7ESPquad
+                            'ESP171' : [],        # 17.1ESP
+                            'ESP257' : [],        # 25.7ESP
+                            'ESP304' : [],        # 30.4ESP
+                            'ESP366' : [],        # 36.6ESP
+                            'darkESP' : [],       # darkESP
+                            'MEGS_P1216' : [],    # 121.6MEGS-P
+                            'darkMEGS_P' : [],    # darkMEGS-P
+                            'q0ESP' : [],
+                            'q1ESP' : [],
+                            'q2ESP' : [],
+                            'q3ESP' : [],
+                            'CMLat' : [],
+                            'CMLon' : [],
+                            'x_cool_proxy' : [],
+                            'oldXRSB_proxy' : []
+                        }
+
+    # select a palette
+    from bokeh.palettes import viridis as palette
+    # create a color iterator
+    colors = palette(len(names_and_legends))
+    for key, color in zip(names_and_legends, colors):
+        names_and_legends[key].append(color)
+        names_and_legends[key].append(str(key))
+
+    for key in names_and_legends:
+        color = names_and_legends[key][0]
+        legend_name = names_and_legends[key][1] + '.'   # legend name cant se same as col name. See https://github.com/bokeh/bokeh/issues/5365
+        fig1.line('index', key, source=source_static, color=color,line_width=2, legend=legend_name)
+
+    fig = Column(fig1)
+
+    source_static.callback = CustomJS(code="""
+        var inds = cb_obj.selected['1d'].indices;
+        var d1 = cb_obj.data;
+        var m = 0;
+        if (inds.length == 0) { return; }
+        for (i = 0; i < inds.length; i++) {
+            d1['color'][inds[i]] = "red"
+            if (d1['y'][inds[i]] > m) { m = d1['y'][inds[i]] }
+        }
+        console.log(m);
+        cb_obj.trigger('change');
+    """)
+
+    hover = HoverTool()
+    hover.tooltips  = [
+        ("time", "@time_str"),
+    ]
+
+    for key in names_and_legends:
+        hover.tooltips.append((key, '@'+str(key)))
+
+    fig1.add_tools(hover)
+
+    # Configure resources to include BokehJS inline in the document.
+    # For more details see:
+    #   http://bokeh.pydata.org/en/latest/docs/reference/resources_embedding.html#bokeh-embed
+    js_resources = INLINE.render_js()
+    css_resources = INLINE.render_css()
+
+    # For more details see:
+    #   http://bokeh.pydata.org/en/latest/docs/user_guide/embedding.html#components
+    script, div = components(fig, INLINE)
+    html = flask.render_template(
+        'timeseries.html',
+        plot_script=script,
+        plot_div=div,
+        js_resources=js_resources,
+        css_resources=css_resources,
+        _from=_from,
+        _to=_to,
+        client_name='GOES'
+    )
+    return encode_utf8(html)
+
 def create_new_db():
     import os
     if os.path.exists(database_name):
@@ -250,6 +609,64 @@ def save_to_db(client=None, input_date=None, image_path=None):
     db.session.commit()
     return
 
+def search_in_timeseries_db(start_time, end_time, client=None):
+    import pandas
+    if client is None:
+        raise ValueError('client argument cannot be None')
+    entry=None
+
+    if client == 'goes':
+        entry = Goes.query.filter(start_time <= Goes.index).filter(end_time >= Goes.index).all()
+
+        zz = {
+                'xrsa': [],
+                'xrsb': [],
+                'time_str': []
+             }
+        for e in entry:
+            for key in zz:
+                zz[key].append(getattr(e, key))
+        print(zz)
+        ret = pandas.DataFrame(data=zz)
+        return ret
+
+    elif client == 'eve':
+        entry = Eve.query.filter(start_time <= Eve.index).filter(end_time >= Eve.index).all()
+
+        zz = {
+                'index': [],
+                'xrsa_proxy' : [],
+                'xrsb_proxy' : [],
+                'sem_proxy' : [],
+                'ESPquad017' : [],    # 0.1-7ESPquad
+                'ESP171' : [],        # 17.1ESP
+                'ESP257' : [],        # 25.7ESP
+                'ESP304' : [],        # 30.4ESP
+                'ESP366' : [],        # 36.6ESP
+                'darkESP' : [],       # darkESP
+                'MEGS_P1216' : [],    # 121.6MEGS-P
+                'darkMEGS_P' : [],    # darkMEGS-P
+                'q0ESP' : [],
+                'q1ESP' : [],
+                'q2ESP' : [],
+                'q3ESP' : [],
+                'CMLat' : [],
+                'CMLon' : [],
+                'x_cool_proxy' : [],
+                'oldXRSB_proxy' : [],
+                'time_str' : []
+        }
+        for e in entry:
+            for key in zz:
+                zz[key].append(getattr(e, key))
+
+        ret = pandas.DataFrame(data=zz)
+
+        return ret
+
+    if entry is None:
+        print("Timeseries data not found")
+        return None
 
 def search_in_db(client=None, input_date=None):
     if client is None:
@@ -281,18 +698,100 @@ def populate_db():
     start_date = '2017-03-05'
     end_date = '2017-03-05'
     clients = [
-            'magnetogram',
-            'continuum',
-            'aia',
-            'stereoa',
+            #'magnetogram',
+            #'continuum',
+            #'aia',
+            #'stereoa',
             #'stereob',
     ]
     for client in clients:
         plot_client_for_range(start_date, end_date, client)
     return
 
+def populate_timeseries_db():
+    import pandas
+    import sunpy.timeseries
+    from sunpy.net import Fido, attrs as a
+    from sunpy.time import TimeRange, parse_time
+
+    start_date = '2016-06-07 00:00'
+    end_date = '2016-06-08 12:00'
+    tr = TimeRange([start_date, end_date])
+
+    clients = [
+            'goes',
+            'eve',
+    ]
+    
+    st = tr.start
+    en = tr.end
+    delta = datetime.timedelta(days=1)
+    en += delta
+    while st <= tr.end:   # do it day by day to minimize load on PC
+
+        for client in clients:
+            if client == 'goes':
+                results = Fido.search(a.Time(st, en), a.Instrument('goes'))
+            elif client == 'eve':
+                results = Fido.search(a.Time(st, en), a.Instrument('eve'), a.Level(0))
+
+            downresp = Fido.fetch(results)
+            source_name = {
+                            'goes': 'XRS',
+                            'eve': 'eve'
+                          }
+            ts = sunpy.timeseries.TimeSeries(downresp, source=source_name[client], concatenate=True)
+            ts.data = ts.data.resample("1T").mean()
+
+            # add time string for display of hover tool
+            ts.data['time_str'] = ts.data.index.strftime('%F %H:%M:%S')
+
+            add_list = []
+
+            if client == 'goes':
+                for row in ts.data.itertuples():    #itertuples faster than iterrows, duh
+                    add_list.append(Goes(row.Index.to_pydatetime(), float(row.xrsa), float(row.xrsb), str(row.time_str)))
+            elif client == 'eve':
+                #print(list(ts.data.columns.values))
+                for row in ts.data.itertuples():
+                    add_list.append(Eve(
+                                            index = row.Index.to_pydatetime(),
+                                            xrsa_proxy = float(row._1),
+                                            xrsb_proxy = float(row._2),
+                                            sem_proxy = float(row._3),
+                                            ESPquad017 = float(row._4),    # 0.1-7ESPquad
+                                            ESP171 = float(row._5),        # 17.1ESP
+                                            ESP257 = float(row._6),        # 25.7ESP
+                                            ESP304 = float(row._7),        # 30.4ESP
+                                            ESP366 = float(row._8),        # 36.6ESP
+                                            darkESP = float(row.darkESP),       # darkESP
+                                            MEGS_P1216 = float(row._10),    # 121.6MEGS-P
+                                            darkMEGS_P = float(row._11),    # darkMEGS-P
+                                            q0ESP = float(row.q0ESP),
+                                            q1ESP = float(row.q1ESP),
+                                            q2ESP = float(row.q2ESP),
+                                            q3ESP = float(row.q3ESP),
+                                            CMLat = float(row.CMLat),
+                                            CMLon = float(row.CMLon),
+                                            x_cool_proxy= float(row._18),
+                                            oldXRSB_proxy = float(row._19),
+                                            time_str = str(row.time_str))
+                                        )
+
+            db.session.add_all(add_list)
+            db.session.commit()
+            
+            clear_download_directory()
+
+        st += delta
+        en += delta
+
+    return
+
+
 create_new_db()
 populate_db()
+populate_timeseries_db()
 
 if __name__ == '__main__':
     print(__doc__)

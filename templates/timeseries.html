@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset='utf-8' />
+    <meta http-equiv='content-type' content='text/html; charset=utf-8' />
+
+    <title>SunPy {{ client_name }} Browser</title>
+
+    <link
+        href="http://cdn.pydata.org/bokeh/release/bokeh-0.12.0.min.css"
+        rel="stylesheet" type="text/css">
+    <link
+        href="http://cdn.pydata.org/bokeh/release/bokeh-widgets-0.12.0.min.css"
+        rel="stylesheet" type="text/css">
+
+    <script src="http://cdn.pydata.org/bokeh/release/bokeh-0.12.0.min.js"></script>
+    <script src="http://cdn.pydata.org/bokeh/release/bokeh-widgets-0.12.0.min.js"></script>
+    {{ js_resources|indent(4)|safe }}
+    {{ css_resources|indent(4)|safe }}
+    {{ plot_script|indent(4)|safe }}
+
+  </head>
+  <body  style="text-align:center">
+                <p>SunPy {{ client_name }} Browser</p><br>
+
+                <!--<center> -->
+                {{ plot_div|indent(4)|safe }}
+                <!-- </center> -->
+
+                            <!-- A simple form for changing the graph -->
+            <form name="time_select" method='GET' align="center">
+                From:
+                <input type="text" name="_from" value="{{ _from }}" /><br>
+                To:
+                <input type="text" name="_to" value="{{ _to }}" />
+                <br>
+                <button type="submit">Submit</button><br>
+                <button name="prev" type="submit">Previous</button>
+                <button name="next" type="submit">Next</button><br>
+                <button name="prev_hour" type="submit">Previous Hour</button>
+                <button name="next_hour" type="submit">Next Hour</button><br>
+                <button name="prev_day" type="submit">Previous Day</button>
+                <button name="next_day" type="submit">Next Day</button><br>
+            </form>
+
+    <br>
+    <p>Powered by <a href="http://sunpy.org/">Sunpy</a>, Flask, and Bokeh</p>
+    <p><a href="{{ url_for('index') }}">Home</a></p>
+  </body>
+</html>
