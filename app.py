@@ -579,7 +579,7 @@ def eve():
         css_resources=css_resources,
         _from=_from,
         _to=_to,
-        client_name='GOES'
+        client_name='EVE'
     )
     return encode_utf8(html)
 
