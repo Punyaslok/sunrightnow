@@ -2,6 +2,7 @@ gunicorn==19.6.0
 flask-bootstrap
 flask_sqlalchemy
 lxml
+bokeh
 
 numpy
 astropy>=2.0
