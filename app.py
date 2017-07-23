@@ -709,8 +709,8 @@ def populate_db(start_date=None, end_date=None):
         raise ValueError('Arguments cant be None')
 
     clients = [
-            'magnetogram',
-            'continuum',
+            #'magnetogram',
+            #'continuum',
             'aia',
             #'stereoa',
             #'stereob',
