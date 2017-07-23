@@ -861,7 +861,13 @@ def job_function():
     #populate_timeseries_db(start_date = '2016-06-07 00:00', end_date = '2016-06-08 12:00')
     return
 
-job = cron.add_job(job_function, 'cron', hour='1,13', timezone=pytz.utc)
+hour_string = ''
+for i in range(1, 24, 3):
+    hour_string += str(i)
+    hour_string += ','
+hour_string = hour_string[:-1]   #remove last comma
+print(hour_string)
+job = cron.add_job(job_function, 'cron', hour=hour_string, timezone=pytz.utc)
 
 
 # Shutdown your cron thread if the web process is stopped
