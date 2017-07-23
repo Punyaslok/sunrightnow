@@ -36,7 +36,7 @@ end_time = day + datetime.timedelta(hours=23, minutes=59, seconds=59)
 ##############################################################################
 # Send the search query.
 
-results = _fetch_line_here
+results = _search_line_here
 
 ##############################################################################
 # We will only download the first file for the day. For that we use slicing

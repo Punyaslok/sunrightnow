@@ -143,3 +143,60 @@ def plot_and_save(start_time, file_name, lats, lngs, numbers, client_name):
     plt.close('all')
 
     return image_path
+
+
+def get_text_for_imaging(_client_name, _input_date):
+    # Imaging plots python script
+    with open('static/python_scripts/imaging_script.py') as f:
+        content = f.readlines()
+
+    if _client_name == 'magnetogram':
+        _search_line_here = """Fido.search(a.Time(start_time, end_time),
+                  a.Instrument('HMI') & a.vso.Physobs("LOS_magnetic_field"),
+                  a.vso.Sample(60 * u.second))"""
+    elif _client_name == 'continuum':
+        _search_line_here = """Fido.search(a.Time(start_time, end_time),
+                  a.Instrument('HMI') & a.vso.Physobs("intensity"),
+                  a.vso.Sample(60 * u.second))"""
+    elif _client_name == 'aia':
+        _search_line_here = """Fido.search(a.Time(start_time, end_time),
+                  a.Instrument('AIA'),
+                  a.vso.Sample(61 * u.second),
+                  a.vso.Wavelength(171*u.AA)
+                 )"""
+    elif 'stereo' in _client_name:
+        source_name = 'STEREO_'
+        if _client_name == 'stereoa':
+            source_name += 'A'
+        elif _client_name == 'stereob':
+            source_name += 'B'
+        _search_line_here = """Fido.search(a.Time(start_time, end_time),
+                  a.Instrument('euvi') & a.vso.Source('"""+str(source_name)+"""')
+                 )"""
+
+    ret = ""
+    for c in content:
+        c = c.replace('_client_name', _client_name)
+        c = c.replace('_input_date', _input_date)
+        c = c.replace('_search_line_here', _search_line_here)
+        if _client_name == 'magnetogram':
+            # Put vmin max for magnetogram only
+            c = c.replace('smap.plot()', 'smap.plot(vmin=-120, vmax=120)')
+        ret += c
+    return ret
+
+def get_text_for_timeseries(_client_name, _from, _to):
+    with open('static/python_scripts/timeseries_script.py') as f:
+        content = f.readlines()
+    ret = ""
+    if _client_name == 'goes':
+        _search_line_here = """Fido.search(a.Time(start_time, end_time), a.Instrument('goes'))"""
+    elif _client_name == 'eve':
+        _search_line_here = """Fido.search(a.Time(start_time, end_time), a.Instrument('eve'), a.Level(0))"""
+    for c in content:
+        c = c.replace('_client_name', _client_name)
+        c = c.replace('_from', _from)
+        c = c.replace('_to', _to)
+        c = c.replace('_search_line_here', _search_line_here)
+        ret += c
+    return ret

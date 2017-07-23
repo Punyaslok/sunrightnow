@@ -7,7 +7,7 @@
     <meta charset='utf-8' />
     <meta http-equiv='content-type' content='text/html; charset=utf-8' />
 
-    <title>SunPy {{ client_name }} Browser</title>
+    <title>SunPy {{ _client_name }} Browser</title>
 
     <link
         href="http://cdn.pydata.org/bokeh/release/bokeh-0.12.0.min.css"
@@ -24,7 +24,7 @@
 
   </head>
   <body  style="text-align:center">
-                <p>SunPy {{ client_name }} Browser</p><br>
+                <p>SunPy {{ _client_name }} Browser</p><br>
 
                 <!-- The following div is to fix the toolbar location
                 when bokeh graphs are center aligned. Its a 
@@ -51,6 +51,7 @@
             </form>
 
     <br>
+    <p><a href="{{ url_for('download', _client_name=_client_name, _from=_from, _to=_to) }}">Download python script for this plot</a></p>
     <p>Powered by <a href="http://sunpy.org/">Sunpy</a>, Flask, and Bokeh</p>
     <p><a href="{{ url_for('index') }}">Home</a></p>
   </body>

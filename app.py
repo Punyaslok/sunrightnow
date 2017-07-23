@@ -22,6 +22,7 @@ imperial.enable()
 
 # Local imports
 from plot_client import plot_client_for_range, clear_download_directory
+from commonfunctions import get_text_for_imaging, get_text_for_timeseries
 
 app = flask.Flask(__name__)
 import os
@@ -428,7 +429,7 @@ def goes():
         css_resources=css_resources,
         _from=_from,
         _to=_to,
-        client_name='GOES'
+        _client_name='GOES'
     )
     return encode_utf8(html)
 
@@ -587,7 +588,7 @@ def eve():
         css_resources=css_resources,
         _from=_from,
         _to=_to,
-        client_name='EVE'
+        _client_name='EVE'
     )
     return encode_utf8(html)
 
@@ -805,47 +806,23 @@ def populate_timeseries_db(start_date=None, end_date=None):
 @app.route('/download')
 def download():
     _client_name = flask.request.args.get('_client_name')
-    _input_date = flask.request.args.get('_input_date')
-
 
     if _client_name in ['magnetogram', 'continuum', 'aia', 'stereoa','stereob',]:
-        # Imaging plots
-        with open('static/python_scripts/imaging_script.py') as f:
-            content = f.readlines()
-
-        if _client_name == 'magnetogram':
-            _fetch_line_here = """Fido.search(a.Time(start_time, end_time),
-                      a.Instrument('HMI') & a.vso.Physobs("LOS_magnetic_field"),
-                      a.vso.Sample(60 * u.second))"""
-        elif _client_name == 'continuum':
-            _fetch_line_here = """Fido.search(a.Time(start_time, end_time),
-                      a.Instrument('HMI') & a.vso.Physobs("intensity"),
-                      a.vso.Sample(60 * u.second))"""
-        elif _client_name == 'aia':
-            _fetch_line_here = """Fido.search(a.Time(start_time, end_time),
-                      a.Instrument('AIA'),
-                      a.vso.Sample(61 * u.second),
-                      a.vso.Wavelength(171*u.AA)
-                     )"""
-        elif 'stereo' in _client_name:
-            source_name = 'STEREO_'
-            if _client_name == 'stereoa':
-                source_name += 'A'
-            elif _client_name == 'stereob':
-                source_name += 'B'
-            _fetch_line_here = """Fido.search(a.Time(start_time, end_time),
-                      a.Instrument('euvi') & a.vso.Source('"""+str(source_name)+"""')
-                     )"""
-
-        ret = ""
-        for c in content:
-            c = c.replace('_client_name', _client_name)
-            c = c.replace('_input_date', _input_date)
-            c = c.replace('_fetch_line_here', _fetch_line_here)
-            if _client_name == 'magnetogram':
-                # Put vmin max for magnetogram only
-                c = c.replace('smap.plot()', 'smap.plot(vmin=-120, vmax=120)')
-            ret += c
+        _input_date = flask.request.args.get('_input_date')
+        ret = get_text_for_imaging(_client_name, _input_date)
+    elif _client_name in ['GOES', 'EVE']:
+        _client_name = _client_name.lower()
+        _from = flask.request.args.get('_from')
+        _to = flask.request.args.get('_to')
+        print('from to  = ')
+        print(_from, _to)
+        ret = get_text_for_timeseries(_client_name, _from, _to)
+        # for naming file
+        _from = str(_from).replace(':', '-')
+        _from = str(_from).replace(' ', '-')
+        _to = str(_to).replace(':', '-')
+        _to = str(_to).replace(' ', '-')
+        _input_date = str(_from) + "-" + str(_to)
 
     # We need to modify the response, so the first thing we 
     # need to do is create a response out of the python script string
