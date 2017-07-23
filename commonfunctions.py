@@ -81,7 +81,7 @@ def fetch_client_file(start_time, end_time, client_name):
                               a.Instrument('euvi') & a.vso.Source(source_name)
                              )
 
-    downloaded_files = Fido.fetch(results)
+    downloaded_files = Fido.fetch(results[-1])  # -1 to get the latest file in the timerange
     print("fido downloaded_files = " + str(downloaded_files))
 
 
