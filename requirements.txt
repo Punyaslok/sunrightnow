@@ -3,6 +3,7 @@ flask-bootstrap
 flask_sqlalchemy
 lxml
 bokeh
+apscheduler
 
 numpy
 astropy>=2.0
