@@ -156,17 +156,17 @@ class Eve(db.Model):
 Bootstrap(app)
 
 
+def get_today_date():
+    return str((datetime.datetime.utcnow()).strftime('%Y-%m-%d'))
 
 
-
-DEFAULT_INPUT_DATE = str((datetime.datetime.utcnow()- datetime.timedelta(1)).strftime('%Y-%m-%d'))    # Yesterday's date
-# DEFAULT_INPUT_DATE = None
+DEFAULT_INPUT_DATE = get_today_date()    # Today's date
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
     args = flask.request.args
-    
-    _input_date = str(args.get('_input_date', DEFAULT_INPUT_DATE))
+
+    _input_date = str(args.get('_input_date', get_today_date()))
     print(_input_date)
 
     clients = [
@@ -191,7 +191,7 @@ def index():
 @app.route('/magnetogram', methods=['GET', 'POST'])
 def magnetogram():
     args = flask.request.args
-    _input_date = str(args.get('_input_date', DEFAULT_INPUT_DATE))
+    _input_date = str(args.get('_input_date', get_today_date()))
     print(_input_date)
 
     try:
@@ -214,7 +214,7 @@ def magnetogram():
 @app.route('/continuum', methods=['GET', 'POST'])
 def continuum():
     args = flask.request.args
-    _input_date = str(args.get('_input_date', DEFAULT_INPUT_DATE))
+    _input_date = str(args.get('_input_date', get_today_date()))
     print(_input_date)
 
     try:
@@ -237,7 +237,7 @@ def continuum():
 @app.route('/aia', methods=['GET', 'POST'])
 def aia():
     args = flask.request.args
-    _input_date = str(args.get('_input_date', DEFAULT_INPUT_DATE))
+    _input_date = str(args.get('_input_date', get_today_date()))
     print(_input_date)
 
     try:
@@ -260,7 +260,7 @@ def aia():
 @app.route('/stereoa', methods=['GET', 'POST'])
 def stereoa():
     args = flask.request.args
-    _input_date = str(args.get('_input_date', DEFAULT_INPUT_DATE))
+    _input_date = str(args.get('_input_date', get_today_date()))
     print(_input_date)
 
     try:
@@ -283,7 +283,7 @@ def stereoa():
 @app.route('/stereob', methods=['GET', 'POST'])
 def stereob():
     args = flask.request.args
-    _input_date = str(args.get('_input_date', DEFAULT_INPUT_DATE))
+    _input_date = str(args.get('_input_date', get_today_date()))
     print(_input_date)
 
     try:
@@ -687,15 +687,15 @@ def search_in_db(client=None, input_date=None):
     print('searching for ' + client + str(input_date))
     entry = None
     if 'magnetogram' in client:
-        entry = Magnetogram.query.filter_by(plot_date=input_date).first()
+        entry = Magnetogram.query.filter_by(plot_date=input_date).order_by(Magnetogram.plot_date.desc()).first()
     elif 'continuum' in client:
-        entry = Continuum.query.filter_by(plot_date=input_date).first()
+        entry = Continuum.query.filter_by(plot_date=input_date).order_by(Continuum.plot_date.desc()).first()
     elif 'aia' in client:
-        entry = Aia.query.filter_by(plot_date=input_date).first()
+        entry = Aia.query.filter_by(plot_date=input_date).order_by(Aia.plot_date.desc()).first()
     elif 'stereoa' in client:
-        entry = StereoA.query.filter_by(plot_date=input_date).first()
+        entry = StereoA.query.filter_by(plot_date=input_date).order_by(StereoA.plot_date.desc()).first()
     elif 'stereob' in client:
-        entry = StereoB.query.filter_by(plot_date=input_date).first()
+        entry = StereoB.query.filter_by(plot_date=input_date).order_by(StereoB.plot_date.desc()).first()
     print(entry)
     if entry is None:
         print("Image not found")
@@ -712,7 +712,7 @@ def populate_db(start_date=None, end_date=None):
             'magnetogram',
             'continuum',
             'aia',
-            'stereoa',
+            #'stereoa',
             #'stereob',
     ]
     for client in clients:
@@ -834,43 +834,45 @@ def download():
     return response
 
 create_new_db()
-#populate_db(start_date = '2017-03-05', end_date = '2017-03-05')
-#populate_timeseries_db(start_date = '2016-06-07 00:00', end_date = '2016-06-08 12:00')
 
-tmp_date = str((datetime.datetime.utcnow() - datetime.timedelta(days=4)).strftime('%Y-%m-%d'))
-tmp_date_2 = str((datetime.datetime.utcnow() - datetime.timedelta(days=3)).strftime('%Y-%m-%d'))
-print(tmp_date, tmp_date_2)
-#populate_db(start_date = tmp_date, end_date = tmp_date_2)
+# Populate with past entries
+#populate_db(start_date = '2017-07-09', end_date = '2017-07-10')
+#populate_timeseries_db(start_date = '2016-06-07 00:00', end_date = '2016-06-08 12:00')
 
 
 #################################################################################################
 # Scheduler
 
-# import atexit
-# from apscheduler.schedulers.background import BackgroundScheduler
+import atexit
+from apscheduler.schedulers.background import BackgroundScheduler
+import pytz
 
-# cron = BackgroundScheduler(daemon=True)
-# # Explicitly kick off the background thread
-# # Be wary of this in debug mode : https://stackoverflow.com/questions/14874782/apscheduler-in-flask-executes-twice
-# cron.start()
-
-
-# def job_function():
-#     yesterday_date = str((datetime.date.today()- datetime.timedelta(1)).strftime('%Y-%m-%d'))    # Yesterday's date
-#     print(yesterday_date)
-#     print((datetime.datetime.utcnow() - datetime.timedelta(1)).strftime('%Y-%m-%d'))
-#     #populate_db(start_date = '2017-03-05', end_date = '2017-03-05')
-#     #populate_timeseries_db(start_date = '2016-06-07 00:00', end_date = '2016-06-08 12:00')
-#     return
-
-# job = cron.add_job(job_function, 'interval', minutes=1)
+cron = BackgroundScheduler(daemon=True)
+# Explicitly kick off the background thread
+# Be wary of this in debug mode : https://stackoverflow.com/questions/14874782/apscheduler-in-flask-executes-twice
+cron.start()
 
 
-# # Shutdown your cron thread if the web process is stopped
-# atexit.register(lambda: cron.shutdown(wait=False))
+def job_function():
+    time_now = datetime.datetime.utcnow()
+    start_date = time_now.strftime('%Y-%m-%d')
+    end_date = start_date
+    populate_db(start_date = start_date, end_date = end_date)
+    #populate_timeseries_db(start_date = '2016-06-07 00:00', end_date = '2016-06-08 12:00')
+    return
+
+job = cron.add_job(job_function, 'cron', hour='1,13', timezone=pytz.utc)
+
+
+# Shutdown your cron thread if the web process is stopped
+atexit.register(lambda: cron.shutdown(wait=False))
 
 # Scheduler ends
 #######################################################################################################
+
+# Run once on startup
+job_function()
+
 if __name__ == '__main__':
     print(__doc__)
     app.run(debug=True)

@@ -45,7 +45,7 @@ def get_srs_info(srs_downloaded_files):
         lngs = srs_table['Longitude']
         numbers = srs_table['Number']
     else:
-        lats = lngs = numbers = None
+        lats = lngs = numbers = []
 
     print(lats, lngs, numbers)
 
@@ -78,10 +78,13 @@ def fetch_client_file(start_time, end_time, client_name):
         elif client_name == 'stereob':
             source_name += 'B'
         results = Fido.search(a.Time(start_time, end_time),
-                              a.Instrument('euvi') & a.vso.Source(source_name)
+                              a.Instrument('euvi') & a.vso.Source(source_name),
+                              a.vso.Wavelength(195*u.AA)
                              )
 
-    downloaded_files = Fido.fetch(results[-1])  # -1 to get the latest file in the timerange
+    results = results[0, -1]  # -1 to get the latest file in the timerange
+    print(results)
+    downloaded_files = Fido.fetch(results)
     print("fido downloaded_files = " + str(downloaded_files))
 
 
@@ -121,12 +124,13 @@ def plot_and_save(start_time, file_name, lats, lngs, numbers, client_name):
 
     ax.set_autoscale_on(False)
 
-    c = SkyCoord(lngs, lats, frame="heliographic_stonyhurst")
-    ax.plot_coord(c, 'o')
+    if len(lats) > 0:
+        c = SkyCoord(lngs, lats, frame="heliographic_stonyhurst")
+        ax.plot_coord(c, 'o')
 
-    for i, num in enumerate(numbers):
-            ax.annotate(num, (lngs[i].value, lats[i].value),
-                                    xycoords=ax.get_transform('heliographic_stonyhurst'))
+        for i, num in enumerate(numbers):
+                ax.annotate(num, (lngs[i].value, lats[i].value),
+                                        xycoords=ax.get_transform('heliographic_stonyhurst'))
 
     
 
