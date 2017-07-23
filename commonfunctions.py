@@ -38,6 +38,8 @@ def get_srs_info(srs_downloaded_files):
         print("Warning : No I or IA entries for this date.")
         srs_table = None
 
+    print("srs table = " + str(srs_table))
+
     if srs_table is not None:
         lats = srs_table['Latitude']
         lngs = srs_table['Longitude']
@@ -51,6 +53,7 @@ def get_srs_info(srs_downloaded_files):
 
 
 def fetch_client_file(start_time, end_time, client_name):
+    print("fetching for " + str(start_time) + "  " + str(end_time))
 
     #return '/home/punya/sunpy/data/hmi_m_45s_2017_03_05_00_02_15_tai_magnetogram.1.fits', ['/home/punya/sunpy/data/hmi_m_45s_2017_03_05_00_02_15_tai_magnetogram.1.fits']
 
@@ -69,7 +72,6 @@ def fetch_client_file(start_time, end_time, client_name):
                               a.vso.Wavelength(171*u.AA)
                               )
     elif 'stereo' in client_name:
-        end_time += datetime.timedelta(minutes=10)
         source_name = 'STEREO_'
         if client_name == 'stereoa':
             source_name += 'A'
@@ -79,8 +81,9 @@ def fetch_client_file(start_time, end_time, client_name):
                               a.Instrument('euvi') & a.vso.Source(source_name)
                              )
 
-
     downloaded_files = Fido.fetch(results)
+    print("fido downloaded_files = " + str(downloaded_files))
+
 
     file_name = downloaded_files[0]
     print(file_name)
@@ -93,7 +96,7 @@ def get_time_range(input_date):
     day = parse_time(input_date)
 
     start_time = day + datetime.timedelta(minutes=0)
-    end_time = day + datetime.timedelta(minutes=1)
+    end_time = day + datetime.timedelta(hours=23, minutes=59, seconds=59)
 
     return start_time, end_time
 

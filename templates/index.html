@@ -8,33 +8,63 @@
 
 
 {% block content %}
-<center>
-<div class="container">
+
+<div class="container" style="text-align: center;">
+
+{% with _scaling_factor = 0.35 %}
+{% with _logo_width =  875*_scaling_factor %}
+{% with _logo_height = 1125*_scaling_factor %}
+<img src = "static/images/sunpy.png" alt="SunPy Logo" style="height:{{ _logo_height }}px; width:{{ _logo_width  }}px;" />
+{% endwith %}
+{% endwith %}
+{% endwith %}
+
+
 <div class="jumbotron">
       <h1>Sun, Right Now!</h1>
 </div>
       <div>
             <form name="input" method='GET'>
                 <div class="form-group">
-                    <label for="input_value">Value</label>
-                    <input type="text" name="_input_value" autocorrect="off" autocapitalize="off" class="form-control" id="input_value" placeholder="{{ _input_value }}" value="{{ _input_value }}">
+                    <label for="input_date">Input Date ( YYYY-MM-DD )</label>
+                    <input type="text" name="_input_date" autocorrect="off" autocapitalize="off" class="form-control" id="input_date" placeholder="{{ _input_date }}" value="{{ _input_date }}">
                 </div>
-                <div class="form-group">
-                    <label for="input_unit">Unit</label>
-                    <input type="text" name="_input_unit"  autocorrect="off" autocapitalize="off" class="form-control" id="input_unit" placeholder="{{ _input_unit }}" value="{{ _input_unit }}">
-                </div>
-                <div class="form-group">
-                    <label for="output_unit">Output Unit</label>
-                    <input type="text" name="_output_unit"  autocorrect="off" autocapitalize="off" class="form-control" id="output_unit" placeholder="{{ _output_unit }}" value="{{ _output_unit }}">
-                </div>
+                
+                
                 <button type="submit" class="btn btn-primary">Submit</button>
             </form><br>
-            <div class="well">
-            <p>
-                {{ _output_value }}
-            </p>
-            </div>
     </div>
+    <div>
+        <p>Showing for {{ _input_date }}</p>
+    </div>
+
+    <table style="margin: 0px auto;" >
+        <tr>
+            <td>
+                <img src = {{ _image_paths['magnetogram'] }} alt="magnetogram" />
+                <p align="center">HMI Magnetogram</p>
+            </td>
+            <td>
+                <img src = {{ _image_paths['continuum'] }} alt="continuum" />
+                <p align="center">HMI Continuum</p>
+            </td>
+            <td>
+                <img src = {{ _image_paths['aia'] }} alt="aia" />
+                <p align="center">AIA</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <img src = {{ _image_paths['stereoa'] }} alt="stereoa" />
+                <p align="center">Stereo A</p>
+            </td>
+            <td>
+                <img src = {{ _image_paths['stereob'] }} alt="stereob" />
+                <p align="center">Stereo B</p>
+            </td>
+        </tr>
+    </table>
+
     <p><a href="{{ url_for('magnetogram') }}">HMI Magnetogram</a></p>
     <p><a href="{{ url_for('continuum') }}">HMI Continuum</a></p>
     <p><a href="{{ url_for('aia') }}">AIA</a></p>
@@ -48,5 +78,5 @@
         <p>Powered by <a href="http://sunpy.org/">Sunpy</a></p>
     </footer>
 </div><!-- /container -->
-</center>
+
 {%- endblock %}

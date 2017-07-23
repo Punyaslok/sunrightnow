@@ -1,5 +1,10 @@
+# If you get the following error while running the flask app:
+# Error: The file/path provided (app) does not appear to exist.  Please verify the path is correct.  If app is not on PYTHONPATH, ensure the extension is .py
+# Then check the .py files for Import errors. Ensure all correct branches are in use if 
+# you have sunpy-dev or any other module. To see exact import errors, run "python app.py"
+
 import flask
-from flask import Flask, flash
+from flask import Flask, flash, make_response
 from flask_bootstrap import Bootstrap
 #from flask_wtf import Form
 #from flask_wtf.csrf import CSRFProtect
@@ -150,34 +155,37 @@ class Eve(db.Model):
 Bootstrap(app)
 
 
-DEFAULT_IN_UNIT = 'mile/hr'
-DEFAULT_IN_VALUE = 100
-DEFAULT_OUT_UNIT = 'm/s'
 
-@app.route('/')
+
+
+DEFAULT_INPUT_DATE = str((datetime.datetime.utcnow()- datetime.timedelta(1)).strftime('%Y-%m-%d'))    # Yesterday's date
+# DEFAULT_INPUT_DATE = None
+
+@app.route('/', methods=['GET', 'POST'])
 def index():
     args = flask.request.args
-    _input_unit = str(args.get('_input_unit', DEFAULT_IN_UNIT))
-    _input_value = float(args.get('_input_value', DEFAULT_IN_VALUE))
-    _output_unit = str(args.get('_output_unit', DEFAULT_OUT_UNIT))
+    
+    _input_date = str(args.get('_input_date', DEFAULT_INPUT_DATE))
+    print(_input_date)
 
-    try:
-        _output_value = u.Quantity(_input_value, _input_unit).to(_output_unit)
-    except ValueError:
-        _output_value = 'Invalid equivalence entry'
+    clients = [
+            'magnetogram',
+            'continuum',
+            'aia',
+            'stereoa',
+            'stereob',
+    ]
+    _image_paths = {}
+    for client in clients:
+        _image_paths[client] = search_in_db(client, _input_date)
 
     html = flask.render_template(
         'index.html',
-        _input_value=_input_value,
-        _input_unit=_input_unit,
-        _output_value=_output_value,
-        _output_unit=_output_unit,
+        clients=clients,
+        _input_date=_input_date,
+        _image_paths=_image_paths
     )
     return html
-
-
-# DEFAULT_INPUT_DATE = str((datetime.date.today()- datetime.timedelta(1)).strftime('%Y-%m-%d'))    # Yesterday's date
-DEFAULT_INPUT_DATE = None
 
 @app.route('/magnetogram', methods=['GET', 'POST'])
 def magnetogram():
@@ -318,8 +326,8 @@ def goes():
     # set some defaults
     #DEFAULT_TR = TimeRange(['2011-06-07 00:00', '2011-06-07 12:00'])
     DEFAULT_TR = TimeRange(['2016-06-07 00:00', '2016-06-07 12:00'])
-    PLOT_HEIGHT = 300
-    PLOT_WIDTH = 900
+    PLOT_HEIGHT = 800
+    PLOT_WIDTH = 1400
     TOOLS = 'pan,box_zoom,wheel_zoom,box_select,crosshair,undo,redo,save,reset'
     ONE_HOUR = datetime.timedelta(seconds=60*60)
     ONE_DAY = datetime.timedelta(days=1)
@@ -448,8 +456,8 @@ def eve():
 
     # set some defaults
     DEFAULT_TR = TimeRange(['2016-06-07 00:00', '2016-06-07 12:00'])
-    PLOT_HEIGHT = 600
-    PLOT_WIDTH = 1000
+    PLOT_HEIGHT = 800
+    PLOT_WIDTH = 1400
     TOOLS = 'pan,box_zoom,wheel_zoom,box_select,crosshair,undo,redo,save,reset'
     ONE_HOUR = datetime.timedelta(seconds=60*60)
     ONE_DAY = datetime.timedelta(days=1)
@@ -675,7 +683,7 @@ def search_in_db(client=None, input_date=None):
         raise ValueError('date argument cannot be None')
 
     input_date = datetime.datetime.strptime(input_date, '%Y-%m-%d')
-    print('searching for ' + str(input_date))
+    print('searching for ' + client + str(input_date))
     entry = None
     if 'magnetogram' in client:
         entry = Magnetogram.query.filter_by(plot_date=input_date).first()
@@ -690,32 +698,36 @@ def search_in_db(client=None, input_date=None):
     print(entry)
     if entry is None:
         print("Image not found")
-        return None
+        return 'static/images/no_image.svg'
     else:
         return entry.image_path
 
-def populate_db():
-    start_date = '2017-03-05'
-    end_date = '2017-03-05'
+def populate_db(start_date=None, end_date=None):
+    
+    if start_date is None or end_date is None:
+        raise ValueError('Arguments cant be None')
+
     clients = [
-            #'magnetogram',
-            #'continuum',
-            #'aia',
-            #'stereoa',
+            'magnetogram',
+            'continuum',
+            'aia',
+            'stereoa',
             #'stereob',
     ]
     for client in clients:
         plot_client_for_range(start_date, end_date, client)
     return
 
-def populate_timeseries_db():
+def populate_timeseries_db(start_date=None, end_date=None):
+    
+    if start_date is None or end_date is None:
+        raise ValueError('Arguments cant be None')
+
     import pandas
     import sunpy.timeseries
     from sunpy.net import Fido, attrs as a
     from sunpy.time import TimeRange, parse_time
 
-    start_date = '2016-06-07 00:00'
-    end_date = '2016-06-08 12:00'
     tr = TimeRange([start_date, end_date])
 
     clients = [
@@ -789,10 +801,99 @@ def populate_timeseries_db():
     return
 
 
-create_new_db()
-populate_db()
-populate_timeseries_db()
+# This route will prompt a file download with the script lines
+@app.route('/download')
+def download():
+    _client_name = flask.request.args.get('_client_name')
+    _input_date = flask.request.args.get('_input_date')
 
+
+    if _client_name in ['magnetogram', 'continuum', 'aia', 'stereoa','stereob',]:
+        # Imaging plots
+        with open('static/python_scripts/imaging_script.py') as f:
+            content = f.readlines()
+
+        if _client_name == 'magnetogram':
+            _fetch_line_here = """Fido.search(a.Time(start_time, end_time),
+                      a.Instrument('HMI') & a.vso.Physobs("LOS_magnetic_field"),
+                      a.vso.Sample(60 * u.second))"""
+        elif _client_name == 'continuum':
+            _fetch_line_here = """Fido.search(a.Time(start_time, end_time),
+                      a.Instrument('HMI') & a.vso.Physobs("intensity"),
+                      a.vso.Sample(60 * u.second))"""
+        elif _client_name == 'aia':
+            _fetch_line_here = """Fido.search(a.Time(start_time, end_time),
+                      a.Instrument('AIA'),
+                      a.vso.Sample(61 * u.second),
+                      a.vso.Wavelength(171*u.AA)
+                     )"""
+        elif 'stereo' in _client_name:
+            source_name = 'STEREO_'
+            if _client_name == 'stereoa':
+                source_name += 'A'
+            elif _client_name == 'stereob':
+                source_name += 'B'
+            _fetch_line_here = """Fido.search(a.Time(start_time, end_time),
+                      a.Instrument('euvi') & a.vso.Source('"""+str(source_name)+"""')
+                     )"""
+
+        ret = ""
+        for c in content:
+            c = c.replace('_client_name', _client_name)
+            c = c.replace('_input_date', _input_date)
+            c = c.replace('_fetch_line_here', _fetch_line_here)
+            if _client_name == 'magnetogram':
+                # Put vmin max for magnetogram only
+                c = c.replace('smap.plot()', 'smap.plot(vmin=-120, vmax=120)')
+            ret += c
+
+    # We need to modify the response, so the first thing we 
+    # need to do is create a response out of the python script string
+    response = make_response(ret)
+
+    # This is the key: Set the right header for the response
+    # to be downloaded, instead of just printed on the browser
+    response.headers["Content-Disposition"] = "attachment; filename="+_client_name + "_" + _input_date +".py"
+    return response
+
+create_new_db()
+#populate_db(start_date = '2017-03-05', end_date = '2017-03-05')
+#populate_timeseries_db(start_date = '2016-06-07 00:00', end_date = '2016-06-08 12:00')
+
+tmp_date = str((datetime.datetime.utcnow() - datetime.timedelta(days=4)).strftime('%Y-%m-%d'))
+tmp_date_2 = str((datetime.datetime.utcnow() - datetime.timedelta(days=3)).strftime('%Y-%m-%d'))
+print(tmp_date, tmp_date_2)
+#populate_db(start_date = tmp_date, end_date = tmp_date_2)
+
+
+#################################################################################################
+# Scheduler
+
+# import atexit
+# from apscheduler.schedulers.background import BackgroundScheduler
+
+# cron = BackgroundScheduler(daemon=True)
+# # Explicitly kick off the background thread
+# # Be wary of this in debug mode : https://stackoverflow.com/questions/14874782/apscheduler-in-flask-executes-twice
+# cron.start()
+
+
+# def job_function():
+#     yesterday_date = str((datetime.date.today()- datetime.timedelta(1)).strftime('%Y-%m-%d'))    # Yesterday's date
+#     print(yesterday_date)
+#     print((datetime.datetime.utcnow() - datetime.timedelta(1)).strftime('%Y-%m-%d'))
+#     #populate_db(start_date = '2017-03-05', end_date = '2017-03-05')
+#     #populate_timeseries_db(start_date = '2016-06-07 00:00', end_date = '2016-06-08 12:00')
+#     return
+
+# job = cron.add_job(job_function, 'interval', minutes=1)
+
+
+# # Shutdown your cron thread if the web process is stopped
+# atexit.register(lambda: cron.shutdown(wait=False))
+
+# Scheduler ends
+#######################################################################################################
 if __name__ == '__main__':
     print(__doc__)
     app.run(debug=True)
