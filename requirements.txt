@@ -1,2 +1,23 @@
 gunicorn==19.6.0
 flask-bootstrap
+flask_sqlalchemy
+lxml
+bokeh
+apscheduler
+
+numpy
+astropy>=2.0
+scipy
+pandas
+matplotlib
+
+sqlalchemy
+scikit-image
+suds-jurko
+beautifulsoup4
+requests
+wcsaxes
+glymur
+pytest
+
+-e git://github.com/Punyaslok/sunpy.git@magnetogram_gallery_example#egg=SunPy

@@ -1,0 +1,47 @@
+{% extends "bootstrap/base.html" %}
+{% block styles %}
+{{super()}}
+    <link rel="stylesheet" href="{{url_for('.static', filename='custom.css')}}">
+{% endblock %}
+
+{% block title %}Sun, Right Now!{% endblock %}
+
+
+{% block content %}
+<center>
+<div class="container">
+<div class="jumbotron">
+      <h1>Sun, Right Now!</h1>
+</div>
+      <div>
+            <form name="input" method='GET'>
+                <div class="form-group">
+                    <label for="input_date">Input Date ( YYYY-MM-DD )</label>
+                    <input type="text" name="_input_date" autocorrect="off" autocapitalize="off" class="form-control" id="input_date" placeholder="{{ _input_date }}" value="{{ _input_date }}">
+                </div>
+                
+                
+                <button type="submit" class="btn btn-primary">Submit</button>
+            </form><br>
+
+
+            {% if _image_path is none %}
+       			<p>
+       				Some Error Occurred. Try Submitting Again.
+       			</p>
+    		{% else %}
+    			<img src = {{ _image_path }} alt="magnetogram" />
+    		{% endif %}
+    		<p>
+    			{{ _image_path }}
+    		</p>
+
+    </div>
+
+    <p><a href="{{ url_for('index') }}">Home</a></p>
+    <footer class="footer">
+        <p>Powered by <a href="http://sunpy.org/">Sunpy</a></p>
+    </footer>
+</div><!-- /container -->
+</center>
+{%- endblock %}
